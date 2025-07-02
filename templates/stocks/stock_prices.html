@@ -1,0 +1,127 @@
+{% extends 'stocks/base.html' %}
+
+{% block title %}Hisse Fiyatları - FUntech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Hisse Senedi Fiyatları
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form id="stockForm">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Hisse Senetleri</label>
+                                <select class="form-select" id="stockSelect" multiple size="8">
+                                    {% for ticker in tickers %}
+                                        <option value="{{ ticker }}" {% if ticker == "ASELS.IS" %}selected{% endif %}>{{ ticker }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Ctrl tuşu ile birden fazla seçim yapabilirsiniz</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Başlangıç Tarihi</label>
+                                <input type="date" class="form-control" id="startDate" value="2023-01-01">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Bitiş Tarihi</label>
+                                <input type="date" class="form-control" id="endDate">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-search me-2"></i>Verileri Getir
+                        </button>
+                    </form>
+
+                    <div id="loading" class="loading">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                        <p class="mt-2">Veriler yükleniyor...</p>
+                    </div>
+
+                    <div id="error" class="alert alert-danger mt-3" style="display: none;"></div>
+
+                    <div id="chart" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Bugünün tarihini bitiş tarihi olarak ayarla
+    const today = new Date().toISOString().split('T')[0];
+    $('#endDate').val(today);
+
+    $('#stockForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const selectedTickers = Array.from($('#stockSelect option:selected')).map(option => option.value);
+        const startDate = $('#startDate').val();
+        const endDate = $('#endDate').val();
+
+        if (selectedTickers.length === 0) {
+            showError('En az bir hisse senedi seçiniz.');
+            return;
+        }
+
+        if (!startDate || !endDate) {
+            showError('Lütfen başlangıç ve bitiş tarihlerini seçiniz.');
+            return;
+        }
+
+        if (startDate >= endDate) {
+            showError('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
+            return;
+        }
+
+        loadStockData(selectedTickers, startDate, endDate);
+    });
+
+    function loadStockData(tickers, startDate, endDate) {
+        $('#loading').show();
+        $('#error').hide();
+        $('#chart').empty();
+
+        $.ajax({
+            url: '{% url "stocks:get_stock_data" %}',
+            method: 'POST',
+            data: JSON.stringify({
+                tickers: tickers,
+                start_date: startDate,
+                end_date: endDate
+            }),
+            contentType: 'application/json',
+            success: function(response) {
+                $('#loading').hide();
+
+                if (response.error) {
+                    showError(response.error);
+                    return;
+                }
+
+                const graphData = JSON.parse(response.graph);
+                Plotly.newPlot('chart', graphData.data, graphData.layout, {responsive: true});
+            },
+            error: function() {
+                $('#loading').hide();
+                showError('Veriler alınırken bir hata oluştu.');
+            }
+        });
+    }
+
+    function showError(message) {
+        $('#error').text(message).show();
+    }
+});
+</script>
+{% endblock %}

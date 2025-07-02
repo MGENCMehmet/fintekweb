@@ -1,0 +1,191 @@
+{% extends 'stocks/base.html' %}
+
+{% block title %}Fiyat Tahmini - FUntech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-brain me-2"></i>Hisse Senedi Fiyat Tahmini
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Bilgi:</strong> Bu tahmin modeli LSTM (Long Short-Term Memory) yapay sinir ağı kullanmaktadır.
+                        Tahminler sadece referans amaçlıdır ve yatırım tavsiyesi değildir.
+                    </div>
+
+                    <form id="predictionForm">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Hisse Senedi</label>
+                                <select class="form-select" id="tickerSelect">
+                                    <option value="">Hisse seçiniz...</option>
+                                    {% for ticker in tickers %}
+                                        <option value="{{ ticker }}">{{ ticker }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Başlangıç Tarihi</label>
+                                <input type="date" class="form-control" id="startDate" value="2020-01-01">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Bitiş Tarihi</label>
+                                <input type="date" class="form-control" id="endDate">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-crystal-ball me-2"></i>Tahmin Et
+                        </button>
+                    </form>
+
+                    <div id="loading" class="loading">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                        <p class="mt-2">Model eğitiliyor ve tahmin yapılıyor...</p>
+                        <small class="text-muted">Bu işlem birkaç dakika sürebilir.</small>
+                    </div>
+
+                    <div id="error" class="alert alert-danger mt-3" style="display: none;"></div>
+                    <div id="success" class="alert alert-success mt-3" style="display: none;"></div>
+
+                    <div id="chart" class="mt-4"></div>
+
+                    <div id="results" class="mt-4" style="display: none;">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-chart-bar me-2"></i>Model Performansı
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-calculator text-primary me-3"></i>
+                                            <div>
+                                                <h6 class="mb-1">RMSE (Root Mean Square Error)</h6>
+                                                <span id="rmseValue" class="h5 text-primary">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-info-circle text-info me-3"></i>
+                                            <div>
+                                                <small class="text-muted">
+                                                    RMSE değeri ne kadar düşükse, tahmin o kadar başarılıdır.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Bugünün tarihini bitiş tarihi olarak ayarla
+    const today = new Date().toISOString().split('T')[0];
+    $('#endDate').val(today);
+
+    $('#predictionForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const ticker = $('#tickerSelect').val();
+        const startDate = $('#startDate').val();
+        const endDate = $('#endDate').val();
+
+        if (!ticker) {
+            showError('Lütfen bir hisse senedi seçiniz.');
+            return;
+        }
+
+        if (!startDate || !endDate) {
+            showError('Lütfen başlangıç ve bitiş tarihlerini seçiniz.');
+            return;
+        }
+
+        if (startDate >= endDate) {
+            showError('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
+            return;
+        }
+
+        // En az 100 günlük veri kontrolü
+        const diffTime = Math.abs(new Date(endDate) - new Date(startDate));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 100) {
+            showError('Tahmin için en az 100 günlük veri gereklidir. Lütfen daha geniş bir tarih aralığı seçiniz.');
+            return;
+        }
+
+        predictStock(ticker, startDate, endDate);
+    });
+
+    function predictStock(ticker, startDate, endDate) {
+        $('#loading').show();
+        $('#error').hide();
+        $('#success').hide();
+        $('#results').hide();
+        $('#chart').empty();
+
+        $.ajax({
+            url: '{% url "stocks:predict_stock" %}',
+            method: 'POST',
+            data: JSON.stringify({
+                ticker: ticker,
+                start_date: startDate,
+                end_date: endDate
+            }),
+            contentType: 'application/json',
+            timeout: 300000, // 5 dakika timeout
+            success: function(response) {
+                $('#loading').hide();
+
+                if (response.error) {
+                    showError(response.error);
+                    return;
+                }
+
+                showSuccess(response.message);
+
+                const graphData = JSON.parse(response.graph);
+                Plotly.newPlot('chart', graphData.data, graphData.layout, {responsive: true});
+
+                $('#rmseValue').text(response.rmse.toFixed(4));
+                $('#results').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading').hide();
+                if (status === 'timeout') {
+                    showError('İşlem zaman aşımına uğradı. Lütfen daha küçük bir veri seti ile tekrar deneyin.');
+                } else {
+                    showError('Tahmin yapılırken bir hata oluştu: ' + error);
+                }
+            }
+        });
+    }
+
+    function showError(message) {
+        $('#error').text(message).show();
+    }
+
+    function showSuccess(message) {
+        $('#success').text(message).show();
+    }
+});
+</script>
+{% endblock %}

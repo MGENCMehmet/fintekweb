@@ -1,0 +1,97 @@
+{% extends 'stocks/base.html' %}
+
+{% block title %}FUntech - Ana Sayfa{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <h1 class="display-3 text-white mb-4 fw-bold">
+                <i class="fas fa-chart-line me-3"></i>FUntech
+            </h1>
+            <p class="lead text-white mb-5">
+                Modern hisse senedi analizi ve fiyat tahmin platformu
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-chart-area fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="card-title mb-3">Hisse Fiyatları</h3>
+                    <p class="card-text text-muted mb-4">
+                        Hisse senetlerinin gerçek zamanlı fiyat verilerini görüntüleyin ve analiz edin.
+                        Açılış, yüksek, düşük ve kapanış fiyatlarını takip edin.
+                    </p>
+                    <a href="{% url 'stocks:stock_prices' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-arrow-right me-2"></i>Fiyatları Görüntüle
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-brain fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="card-title mb-3">Fiyat Tahmini</h3>
+                    <p class="card-text text-muted mb-4">
+                        Yapay zeka ve makine öğrenmesi algoritmaları ile hisse senedi fiyat tahminleri yapın.
+                        LSTM modeli ile gelecek fiyatları öngörün.
+                    </p>
+                    <a href="{% url 'stocks:predictions' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-crystal-ball me-2"></i>Tahmin Yap
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h4 class="card-title mb-3">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Platform Özellikleri
+                    </h4>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-globe text-primary me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">Global Hisseler</h6>
+                                    <small class="text-muted">ABD ve Türkiye piyasaları</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-clock text-primary me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">Gerçek Zamanlı</h6>
+                                    <small class="text-muted">Anlık veri güncellemeleri</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-robot text-primary me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">AI Tahminler</h6>
+                                    <small class="text-muted">Makine öğrenmesi modelleri</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
