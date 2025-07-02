@@ -1,1 +1,1 @@
-web: gunicorn stocktracker.wsgi
+web: gunicorn stocktracker.wsgi --log-file -
