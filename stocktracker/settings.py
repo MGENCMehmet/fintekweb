@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ia6tb11s^-ez($nrcsn0ny0l4r^clvht%6h&$acc@9w78h2p@^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['fintekweb.herokuapp.com', 'localhost', '127.0.0.1']
 
 
 
